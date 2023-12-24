@@ -1,3 +1,3 @@
 {
-    "files": ["src/warning.py","src/LogReader.py","launcher","info.py","src/LReader.py","LogReader.py","src/settings.py"]
+    "files": ["src/LogReader.py","LogReader.py","src/tab.py","launcher","src/settings.py","src/LReader.py","info.py","src/warning.py","src/utils.py"]
 }

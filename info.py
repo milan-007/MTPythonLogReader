@@ -3,7 +3,7 @@
 # if __name__ == "__main__":
 #     pass
 
-applicationName = "MultiTab Logreader"
+applicationName = "MultiTab LogReader"
 organisationName = "SUPSoft"
 web = "sup.cz"
 version = "0.1.0"

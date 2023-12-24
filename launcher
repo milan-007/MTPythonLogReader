@@ -5,7 +5,7 @@ import os
 import logging
 
 from src import LogReader
-import info as i
+import info as f
 
 from PySide2.QtCore import Qt, QCoreApplication, Signal, QIODevice, QTimer, qDebug
 
@@ -33,10 +33,15 @@ class SingleApplicationWithMessaging(SingleApplication):
         super().__init__(argv, key)
         self._key = key
         self._timeout = 1000
+        self._serverError = False
         if not self.isRunning():
             self._server = QLocalServer(self)
             self._server.newConnection.connect(self.handleMessage)
-            self._server.listen(self._key)
+            if not self._server.listen(self._key):
+                self._server.removeServer(self._key)
+                if not self._server.listen(self._key):
+                    logging.error("Server  could not listen")
+                    self._serverError = True
 
     def handleMessage(self):
         #qDebug("Handle")
@@ -75,14 +80,14 @@ def setAppPath(launcher: str):
 
 
 def setAppAttributes(a: QApplication):
-    a.setApplicationName(i.applicationName)
-    a.setOrganizationName(i.organisationName)
-    a.setOrganizationDomain(i.web)
+    a.setApplicationName(f.applicationName)
+    a.setOrganizationName(f.organisationName)
+    a.setOrganizationDomain(f.web)
     pass
 
 
 def setLogger(logPath: str, logFileName: str):
-    logPath = os.path.join(i.appPath, logPath)
+    logPath = os.path.join(f.appPath, logPath)
     os.makedirs(logPath, exist_ok=True)
     logFilePath = os.path.join(logPath, logFileName)
     logging.basicConfig(
@@ -99,22 +104,30 @@ def setLogger(logPath: str, logFileName: str):
 
 if __name__ == '__main__':
     arg = sys.argv
+    if len(arg) < 2:
+    # finta
+        arg = [
+        '/home/milan/projects/python/LogRaederMT/launcher',
+        '/home/milan/projects/python/Download/logs/VideoSubtitle reader.log'
+        ]
     QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
-    app = SingleApplicationWithMessaging(arg, i.applicationName)
+    app = SingleApplicationWithMessaging(arg, f.applicationName)
     setAppAttributes(app)
     if app.isRunning():
-        m = 'app is already running'
-        print("Posláno : " + m)
-        if len(sys.argv) > 1:
-            m = "Posláno : " + ' '.join(sys.argv[1:])
+        m = 'app is already running, no message sent'
+        print(m)
+        if len(arg) > 1:
+            m = arg[1]
         app.sendMessage(m)
         sys.exit()
 
-    i.appPath = setAppPath(arg[0])
+    f.appPath = setAppPath(arg[0])
     setLogger("logs", "LogReader.log")
-
-    window = LogReader.LogReader()
+    file = "" if len(arg) < 1 else arg[1]
+    qDebug(f"args: {arg}")
+    window = LogReader.LogReader(file)
     app.messageAvailable.connect(window.handleMessage)
     window.show()
-
+    if app._serverError:
+        window.error("Unable to start communication server")
     sys.exit(app.exec_())

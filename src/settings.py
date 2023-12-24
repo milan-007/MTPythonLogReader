@@ -2,20 +2,21 @@
 from PySide2.QtCore import QSettings, QSize
 import logging
 
+
 class Settings(QSettings):
 
     initValues = {
-    "mwg": {
-        "key": "windows/mainWindow/geometry", "value": ""
-        },
-    "afg":{
-        "key": "windows/addFile/geometry", "value": ""
-        },
+        "mwg": {
+            "key": "windows/mainWindow/geometry", "value": ""
+            },
+        "afg": {
+            "key": "windows/addFile/geometry", "value": ""
+            },
     }
 
-    def __init__(self):
-        logging.debug("Start app settings")
+    def __init__(self, initValues):
         QSettings.__init__(self)
+        logging.debug("Start settings")
         self.setValues()
         pass
 

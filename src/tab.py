@@ -18,6 +18,8 @@ class Tab(QtWidgets.QWidget):
             "CRITICAL": ['white', 'red']
         }
         self.fileName = fileName
+        self.searchStatus = False
+        self.searchText = ""
         self.logStyle = "logging"
 
         pass

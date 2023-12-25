@@ -124,7 +124,7 @@ if __name__ == '__main__':
     f.appPath = setAppPath(arg[0])
     setLogger("logs", "LogReader.log")
     file = "" if len(arg) < 1 else arg[1]
-    qDebug(f"args: {arg}")
+    # qDebug(f"args: {arg}")
     window = LogReader.LogReader(file)
     app.messageAvailable.connect(window.handleMessage)
     window.show()

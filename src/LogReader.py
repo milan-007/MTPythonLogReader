@@ -3,6 +3,7 @@ import sys
 import os
 import logging
 import pprint
+import info as f
 
 from PySide2.QtCore import QFile, QDir, QFileSystemWatcher, QFileInfo,\
     QCoreApplication, Qt, QPoint,\
@@ -10,13 +11,11 @@ from PySide2.QtCore import QFile, QDir, QFileSystemWatcher, QFileInfo,\
 
 
 from PySide2.QtWidgets import QApplication, QMainWindow,\
-    QWidget, QTabWidget, QLabel, QMessageBox, QLineEdit, QPushButton,\
-    QAction, QToolBar,\
+    QWidget, QTabWidget, QLabel, QMessageBox, QLineEdit, QPushButton, QFileDialog,\
+    QAction, QToolBar, QMenu, QStatusBar,\
     QGridLayout, QFrame
 
 from src import utils, settings, tab
-
-
 
 
 class LogReader(QMainWindow):
@@ -24,31 +23,42 @@ class LogReader(QMainWindow):
     initValues = {
         "mwg": {
             "key": "windows/mainWindow/geometry", "value": ""
-            },
+        }
     }
+
     def __init__(self, file):
         super().__init__()
         self.settings = settings.Settings(self.initValues)
-        self.setWindowTitle("QSingleApplication Demo")
+        self.setWindowTitle(f.applicationName)
+        self.setStatusBar(QStatusBar(self))
         savedGeometry = self.settings.getValueByAbbreviature("mwg")
         if savedGeometry:
             self.restoreGeometry(savedGeometry)
 
-        self.defineActions()
-        self.addToolBar(Qt.TopToolBarArea, self.toolbar())
         self.setupUI()
         self.watcher = QFileSystemWatcher()
-        qDebug(f"{file}")
-        self.tabs = []
+        # qDebug(f"{file}")
+
+        self.maxRecentFiles = 10
+        self.recentFiles = self.settings.readList("Recent", "file")
+        self.recentFiles = list(set(self.recentFiles))
+
+        logging.debug(f"recent : {self.recentFiles}")
+
+        self.defineActions()
+        self.addToolBar(Qt.TopToolBarArea, self.toolbar())
+        self.menu()
+
         if file:
             self.fileName = file if utils.fileExists(file) else ""
         else:
             self.fileName = ""
-        qDebug(f"self.fileName:  {self.fileName}")
+        # qDebug(f"self.fileName:  {self.fileName}")
         if self.fileName:
             self.addTab()
 
         #
+        # self.settings.writeToArray("Recent", "s", "d", "r")
         pass
 
     def setupUI(self):
@@ -57,9 +67,7 @@ class LogReader(QMainWindow):
         self.setCentralWidget(cw)
 
     def myLayout(self):
-
         self.qleSearchText = QLineEdit()
-
         self.qpbForward = QPushButton()
         self.qpbForward.setIcon(utils.getIcon("arrow-up"))
         self.qpbForward.setMaximumWidth(20)
@@ -68,11 +76,17 @@ class LogReader(QMainWindow):
         self.qpbBackward.setIcon(utils.getIcon("arrow-down"))
         self.qpbBackward.setMaximumWidth(20)
 
+        self.qpbHide = QPushButton()
+        self.qpbHide.setIcon(utils.getIcon("dialog-close"))
+        self.qpbHide.setMaximumWidth(20)
+
+
         framegrid = QGridLayout()
         i = 0
         framegrid.addWidget(self.qleSearchText, i, 0, 1, 3)
         framegrid.addWidget(self.qpbForward, i, 4)
         framegrid.addWidget(self.qpbBackward, i, 5)
+        framegrid.addWidget(self.qpbHide, i, 6)
 
         self.qfSearch = QFrame()
         self.qfSearch.setVisible(False)
@@ -80,11 +94,12 @@ class LogReader(QMainWindow):
         self.qfSearch.setFrameShape(QFrame.Box)
         self.qfSearch.setLayout(framegrid)
 
-
-
         self.label = QLabel()
         self.label.setText("Pokus")
         self.qTabW = QTabWidget()
+        self.qTabW.setTabsClosable(True)
+        self.qTabW.currentChanged.connect(self.qtabW_currentChanged)
+        self.qTabW.tabCloseRequested.connect(self.qTabW_tabcloseR)
 
         mainGrid = QGridLayout()
         mainGrid.addWidget(self.label, 1, 1)
@@ -112,6 +127,32 @@ class LogReader(QMainWindow):
             self.tr("Search"),
             self.tr("Search in text")
         )
+        self.actSearch.setShortcut("Ctrl+F")
+
+        self.actOpenDocument = self.createAction(
+            "document-open", self.openFile,
+            self.tr("Open document"),
+            self.tr("Open new document")
+        )
+        self.actOpenDocument.setShortcut("Ctrl+O")
+
+        self.actOpenRecent = self.createAction(
+            "document-open-recent", None,
+            self.tr("Open recent document"),
+            self.tr("Open previously opened document")
+        )
+        self.openRecent_submenu()
+
+
+
+        # self.recentFiles(self.actOpenRecent)
+
+        self.actCloseDocument = self.createAction(
+            "edit-find", self.closeTab,
+            self.tr("Close"),
+            self.tr("Close current document")
+        )
+        self.actCloseDocument.setShortcut("Ctrl+W")
         pass
 
     def createAction(self, icon, do, text: str = "", tooltip: str = ""):
@@ -120,6 +161,29 @@ class LogReader(QMainWindow):
         action.triggered.connect(do)
         return action
 
+    def openRecent_submenu(self):
+        if recmenu := self.recentOpened():
+            logging.debug("instaluji nové menu")
+            self.actOpenRecent.setMenu(recmenu)
+        else:
+            self.actOpenRecent.setVisible(False)
+
+    def recentOpened(self):
+        menu = QMenu()
+        # logging.debug(f"Recent files : {self.recentFiles}")
+        for file in self.recentFiles:
+            if self.isOpened(file) is False:
+                action = QAction(os.path.basename(file), self)
+                action.setToolTip(file)
+                action.setStatusTip(file)
+                logging.debug(f"přidávám : {file}")
+                menu.addAction(action)
+            else:
+                continue
+        menu.triggered.connect(self.recent_activated)
+        return menu
+        pass
+
     def toolbar(self):
         toolbar = QToolBar("Main toolbar")
         toolbar.setOrientation(Qt.Horizontal)
@@ -127,26 +191,59 @@ class LogReader(QMainWindow):
         toolbar.setAllowedAreas(
                     Qt.LeftToolBarArea | Qt.RightToolBarArea | Qt.TopToolBarArea)
         toolbar.addAction(self.actSearch)
+        toolbar.addAction(self.actOpenRecent)
         return toolbar
 
+    def menu(self):
+        mainMenu = self.menuBar()
+        fileMenu = mainMenu.addMenu(self.tr("&File"))
+        fileMenu.addAction(self.actOpenDocument)
+        fileMenu.addAction(self.actOpenRecent)
+        fileMenu.addAction(self.actExit)
+
+        editMenu = mainMenu.addMenu(self.tr("&Edit"))
+        editMenu.addAction(self.actSearch)
+
+        pass
 
     def exitApp(self):
         self.close()
         pass
 
+    def recent_activated(self, action):
+        self.fileName = action.toolTip()
+        logging.debug(f"activated {action.toolTip()}")
+        if utils.fileExists(self.fileName):
+            self.addTab()
+        else:
+            self.recentFiles.remove(self.fileName)
+            self.error(self.tr("File already does not exists !"))
+        pass
+
+    def isOpened(self, file):
+        for i in range(self.qTabW.count()):
+            opened = self.qTabW.widget(i).fileName
+            if opened == file:
+                return i
+        return False
+
     def addTab(self):
+        self.recentFiles.insert(0, self.fileName)
+        self.recentFiles = list(set(self.recentFiles))
+        self.settings.writeList("Recent", "file", self.recentFiles[:10])
         tabCreator = tab.Tab(self.fileName)
         newTab = tabCreator.tab()
         # print(newTab)
         tabName = os.path.basename(self.fileName)
-        self.qTabW.addTab(newTab, tabName)
-        for i in range(self.qTabW.count()):
-            file = self.qTabW.widget(i).fileName
-            qDebug(f"a: {file}")
+        ci = self.qTabW.addTab(newTab, tabName)
+        self.qTabW.setTabToolTip(ci, self.fileName)
+        self.qTabW.setCurrentIndex(ci)
+        self.openRecent_submenu()
         pass
 
     def search(self):
         self.qfSearch.setVisible(True)
+        self.qTabW.widget(self.currActiveTab).searchStatus = True
         self.qleSearchText.setFocus()
 
     def handleMessage(self, message):
@@ -157,24 +254,47 @@ class LogReader(QMainWindow):
             self.fileName = ""
 
         if self.fileName:
-            found = False
-            for i in range(self.qTabW.count()):
-                openedFile = self.qTabW.widget(i).fileName
-                if self.fileName == openedFile:
-                    found = True
-                    self.qTabW.setCurrentIndex(i)
-        if not found:
-            self.addTab()
-
-        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
-        self.show()
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowStaysOnTopHint)
-        self.show()
-        self.setWindowState(Qt.WindowState.WindowActive)
+            i = self.isOpened(self.fileName)
+            if i is False:
+                self.addTab()
+            else:
+                self.qTabW.setCurrentIndex(i)
+            self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+            self.show()
+            self.setWindowFlags(self.windowFlags() & ~Qt.WindowStaysOnTopHint)
+            self.show()
+            self.setWindowState(Qt.WindowState.WindowActive)
         pass
+
+    def qtabW_currentChanged(self, index):
+        self.currActiveTab = index
+        self.qfSearch.setVisible(self.qTabW.widget(index).searchStatus)
+        qDebug(f"Tab změněn: {index}")
+        pass
+
+    def qTabW_tabcloseR(self, index):
+        self.qTabW.removeTab(index)
+        pass
+
+    def closeTab(self):
+        self.qTabW.removeTab(self.currActiveTab)
+        pass
+
+    def openFile(self):
+        self.fileName, _ = QFileDialog.getOpenFileName(
+            self,
+            self.tr("Open file"),
+            None,
+            self.tr("Any file (*)"),
+            options=QFileDialog.DontUseNativeDialog
+            )
+        # print( type( fileName ), fileName )
+        if(self.fileName):
+            self.addTab()
 
     def closeEvent(self, event):
         self.settings.setValueByAbbreviature("mwg", self.saveGeometry())
+        self.settings.writeList("Recent", "file", self.recentFiles[:10])
         event.accept()
         pass
 
@@ -191,37 +311,5 @@ class LogReader(QMainWindow):
         return trs
 
 
-#def setAppAttributes(a: QApplication):
-#    a.setApplicationName(i.applicationName)
-#    a.setOrganizationName(i.organisationName)
-#    a.setOrganizationDomain(i.web)
-
-
-
-
-
-#def main(arg: list):
-#    QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
-#    app = QSingleApplication([])
-#    setAppAttributes(app)
-#    # appPath = os.path.dirname(__file__)
-#    i.appPath = setAppPath(arg[0])
-#    setLogger("logs", "LogReader.log")
-
-#    window = LogReader()
-#    app.singleStart(window)
-#    sys.exit(app.exec_())
-
-#    filename = ""
-#    if len(arg) > 1:
-#        filename = arg[1]
-#        logger.debug(filename)
-#        if not utils.filename.exists():
-#            filename = ""
-
-
-    #window = LogReader()
-    #window.show()
-    #sys.exit(app.exec_())
 
 

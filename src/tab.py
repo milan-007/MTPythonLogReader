@@ -3,11 +3,11 @@ from PySide2 import QtCore
 from PySide2 import QtWidgets
 from PySide2.QtGui import QTextCursor, QTextDocument
 from src import utils
-
+import logging
 
 class Tab(QtWidgets.QWidget):
 
-    colorChanged = Signal(bool)
+    colorChange = QtCore.Signal(bool)
 
     def __init__(self, fileName):
         super().__init__()
@@ -23,7 +23,7 @@ class Tab(QtWidgets.QWidget):
         }
         self.fileName = fileName
         self.searchStatus = False
-        self.searchText = ""
+        self.searchedText = ""
         self.searchTextBackground = True
         self.logStyle = "logging"
 
@@ -98,8 +98,10 @@ class Tab(QtWidgets.QWidget):
         flags = QTextDocument.FindFlags()
         if backward:
             flags = flags | QTextDocument.FindBackward
-        self.searchText = text
+        self.searchedText = text
+        logging.debug(f"měním :{self.searchedText}")
         rv = self.qtbView.find(text, flags)
+        self.colorChange.emit(rv)
         pass
 
 

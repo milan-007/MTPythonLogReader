@@ -29,7 +29,7 @@ def setItemColor(self, item, color = None, bg = None):
     if color:
         pal.setColor(item.foregroundRole(), QColor(color))
     if bg:
-        pal.setColor(item.backgroundRole(), QColor(bg)
+        pal.setColor(item.backgroundRole(), QColor(bg))
     item.setPalette(pal)
 
 

@@ -233,7 +233,8 @@ class LogReader(QMainWindow):
         self.recentFiles.insert(0, self.fileName)
         # logging.debug(f"{self.recentFiles}")
         self.recentFiles = list(dict.fromkeys(self.recentFiles))
-        # logging.debug(f"{self.recentFiles}")
+        rv = self.cutRecentList(self.recentFiles)
+        logging.debug(f"{pprint.pformat(self.recentFiles)}")
 
         self.settings.writeList("Recent", "file", self.recentFiles[:self.maxRecentFiles])
         tabCreator = tab.Tab(self.fileName)
@@ -248,6 +249,9 @@ class LogReader(QMainWindow):
         self.openRecent_submenu()
         self.actSearch.setVisible(True)
         pass
+
+    def cutRecentList(self, recent: list)-> list:
+        logging.debug("vstupuju")
 
     def search(self):
         self.qfSearch.setVisible(True)
@@ -284,10 +288,13 @@ class LogReader(QMainWindow):
         pass
 
     def qtabW_currentChanged(self, index):
-        qDebug(f"Tab změněn: {index}")
+        logging.debug(f"Tab změněn: {index}")
         self.currActiveTab = index
         if index >= 0:
-            self.qfSearch.setVisible(self.qTabW.widget(index).searchStatus)
+            tabWg = self.qTabW.widget(index)
+            self.qfSearch.setVisible(tabWg.searchStatus)
+            logging.debug(f"Hledaný text : {tabWg.searchedText}")
+            self.qleSearchedText.setText(tabWg.searchedText)
         else:
             self.actSearch.setVisible(False)
             self.qfSearch.setVisible(False)

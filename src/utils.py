@@ -9,6 +9,8 @@ from PySide2.QtGui import QIcon
 
 from PySide2.QtWidgets import QStyle, QApplication
 
+import info as f
+
 
 def fileExists(fileName: str) -> bool:
     fi = QFileInfo(fileName)
@@ -22,10 +24,23 @@ def smoothUrl(url: str) -> str:
         fileName = fileName.replace(k, v)
     return fileName
 
+def setItemColor(self, item, color = None, bg = None):
+    pal = item.palette()
+    if color:
+        pal.setColor(item.foregroundRole(), QColor(color))
+    if bg:
+        pal.setColor(item.backgroundRole(), QColor(bg)
+    item.setPalette(pal)
+
 
 def getIcon(iconName):
     if QFile.exists(iconName):
         return QIcon(iconName)
+    # print(f.QRCImagePath)
+    if not iconName.startswith(f.QRCImagePath):
+        rc_iconName = f.QRCImagePath + iconName
+        if QFile.exists(rc_iconName):
+            return QIcon(rc_iconName)
     defaultIcon = QApplication.style().standardIcon(QStyle.SP_MessageBoxWarning)
     return QIcon.fromTheme(iconName, defaultIcon)
 

@@ -36,7 +36,8 @@ class LogReader(QMainWindow):
             self.restoreGeometry(savedGeometry)
 
         self.setupUI()
-        self.watcher = QFileSystemWatcher()
+        self.fwatcher = QFileSystemWatcher()
+        self.fwatcher.fileChanged.connect(self.fileWasChanged)
         # qDebug(f"{file}")
 
         self.maxRecentFiles = 10
@@ -67,7 +68,8 @@ class LogReader(QMainWindow):
         self.setCentralWidget(cw)
 
     def myLayout(self):
-        self.qleSearchText = QLineEdit()
+        self.qleSearchedText = QLineEdit()
+        self.qleSearchedText.textChanged.connect(self.searchedTextchanged)
         self.qpbForward = QPushButton()
         self.qpbForward.setIcon(utils.getIcon("arrow-up"))
         self.qpbForward.setMaximumWidth(20)
@@ -83,7 +85,7 @@ class LogReader(QMainWindow):
 
         framegrid = QGridLayout()
         i = 0
-        framegrid.addWidget(self.qleSearchText, i, 0, 1, 3)
+        framegrid.addWidget(self.qleSearchedText, i, 0, 1, 3)
         framegrid.addWidget(self.qpbForward, i, 4)
         framegrid.addWidget(self.qpbBackward, i, 5)
         framegrid.addWidget(self.qpbHide, i, 6)
@@ -94,15 +96,12 @@ class LogReader(QMainWindow):
         self.qfSearch.setFrameShape(QFrame.Box)
         self.qfSearch.setLayout(framegrid)
 
-        self.label = QLabel()
-        self.label.setText("Pokus")
         self.qTabW = QTabWidget()
         self.qTabW.setTabsClosable(True)
         self.qTabW.currentChanged.connect(self.qtabW_currentChanged)
         self.qTabW.tabCloseRequested.connect(self.qTabW_tabcloseR)
 
         mainGrid = QGridLayout()
-        mainGrid.addWidget(self.label, 1, 1)
         mainGrid.addWidget(self.qTabW, 2, 0, 10, 10)
         mainGrid.addWidget(self.qfSearch, 13, 0, 1, 10)
         return mainGrid
@@ -128,6 +127,7 @@ class LogReader(QMainWindow):
             self.tr("Search in text")
         )
         self.actSearch.setShortcut("Ctrl+F")
+        self.actSearch.setVisible(False)
 
         self.actOpenDocument = self.createAction(
             "document-open", self.openFile,
@@ -176,7 +176,7 @@ class LogReader(QMainWindow):
                 action = QAction(os.path.basename(file), self)
                 action.setToolTip(file)
                 action.setStatusTip(file)
-                logging.debug(f"přidávám : {file}")
+                # logging.debug(f"přidávám : {file}")
                 menu.addAction(action)
             else:
                 continue
@@ -212,7 +212,8 @@ class LogReader(QMainWindow):
 
     def recent_activated(self, action):
         self.fileName = action.toolTip()
-        logging.debug(f"activated {action.toolTip()}")
+        logging.info(self.fileName)
+        # logging.debug(f"activated {action.toolTip()}")
         if utils.fileExists(self.fileName):
             self.addTab()
         else:
@@ -228,23 +229,39 @@ class LogReader(QMainWindow):
         return False
 
     def addTab(self):
+        # logging.debug(f"{self.recentFiles}")
         self.recentFiles.insert(0, self.fileName)
-        self.recentFiles = list(set(self.recentFiles))
-        self.settings.writeList("Recent", "file", self.recentFiles[:10])
+        # logging.debug(f"{self.recentFiles}")
+        self.recentFiles = list(dict.fromkeys(self.recentFiles))
+        # logging.debug(f"{self.recentFiles}")
+
+        self.settings.writeList("Recent", "file", self.recentFiles[:self.maxRecentFiles])
         tabCreator = tab.Tab(self.fileName)
         newTab = tabCreator.tab()
+        newTab.colorChange.connect(self.qle_changeColor)
         # print(newTab)
         tabName = os.path.basename(self.fileName)
         ci = self.qTabW.addTab(newTab, tabName)
         self.qTabW.setTabToolTip(ci, self.fileName)
         self.qTabW.setCurrentIndex(ci)
+        self.fwatcher.addPath(self.fileName)
         self.openRecent_submenu()
+        self.actSearch.setVisible(True)
         pass
 
     def search(self):
         self.qfSearch.setVisible(True)
         self.qTabW.widget(self.currActiveTab).searchStatus = True
-        self.qleSearchText.setFocus()
+        self.qleSearchedText.setFocus()
+        pass
+
+    def searchedTextchanged(self):
+        self.qTabW.widget(self.currActiveTab).search(self.qleSearchedText.text())
+        pass
+
+    def qle_changeColor(self, color):
+        logging.debug(color)
+
 
     def handleMessage(self, message):
         self.label.setText(message)
@@ -267,13 +284,21 @@ class LogReader(QMainWindow):
         pass
 
     def qtabW_currentChanged(self, index):
-        self.currActiveTab = index
-        self.qfSearch.setVisible(self.qTabW.widget(index).searchStatus)
         qDebug(f"Tab změněn: {index}")
+        self.currActiveTab = index
+        if index >= 0:
+            self.qfSearch.setVisible(self.qTabW.widget(index).searchStatus)
+        else:
+            self.actSearch.setVisible(False)
+            self.qfSearch.setVisible(False)
         pass
 
     def qTabW_tabcloseR(self, index):
+        file = self.qTabW.widget(index).fileName
+        self.fwatcher.removePath(file)
         self.qTabW.removeTab(index)
+        self.openRecent_submenu()
+
         pass
 
     def closeTab(self):
@@ -291,6 +316,18 @@ class LogReader(QMainWindow):
         # print( type( fileName ), fileName )
         if(self.fileName):
             self.addTab()
+        pass
+
+    def fileWasChanged(self, path):
+        print(path)
+        index = self.isOpened(path)
+        logging.debug(f" index = {index}")
+        if index is False:
+            self.fwatcher.removePath(path)
+            return
+        else:
+            self.qTabW.widget(index).addText()
+        pass
 
     def closeEvent(self, event):
         self.settings.setValueByAbbreviature("mwg", self.saveGeometry())

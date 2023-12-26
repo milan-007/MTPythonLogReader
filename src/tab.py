@@ -1,10 +1,14 @@
 # This Python file uses the following encoding: utf-8
 from PySide2 import QtCore
 from PySide2 import QtWidgets
-
+from PySide2.QtGui import QTextCursor, QTextDocument
 from src import utils
 
+
 class Tab(QtWidgets.QWidget):
+
+    colorChanged = Signal(bool)
+
     def __init__(self, fileName):
         super().__init__()
         self.flength = 0
@@ -20,6 +24,7 @@ class Tab(QtWidgets.QWidget):
         self.fileName = fileName
         self.searchStatus = False
         self.searchText = ""
+        self.searchTextBackground = True
         self.logStyle = "logging"
 
         pass
@@ -87,6 +92,16 @@ class Tab(QtWidgets.QWidget):
     def setcolor( self, color, text):
         rv = '<font color="'+color+'">' + text + '</font>'
         return rv
+
+    def search(self, text, backward = None):
+        print(text)
+        flags = QTextDocument.FindFlags()
+        if backward:
+            flags = flags | QTextDocument.FindBackward
+        self.searchText = text
+        rv = self.qtbView.find(text, flags)
+        pass
+
 
 
 

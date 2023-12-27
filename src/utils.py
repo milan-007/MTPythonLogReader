@@ -4,11 +4,13 @@ from PySide2.QtCore import QFileInfo,\
     QDir,\
     QFile
 
-from PySide2.QtGui import QIcon
+from PySide2.QtGui import QIcon, QColor
 
 
 from PySide2.QtWidgets import QStyle, QApplication
 
+import logging
+import pprint
 import info as f
 
 
@@ -24,7 +26,8 @@ def smoothUrl(url: str) -> str:
         fileName = fileName.replace(k, v)
     return fileName
 
-def setItemColor(self, item, color = None, bg = None):
+def setItemColor(item, color = None, bg = None):
+    logging.debug(f"Item : {pprint.pformat(str(item))}")
     pal = item.palette()
     if color:
         pal.setColor(item.foregroundRole(), QColor(color))

@@ -24,7 +24,10 @@ class Tab(QtWidgets.QWidget):
         self.fileName = fileName
         self.searchStatus = False
         self.searchedText = ""
+        self.caseSensitive = False
         self.searchTextBackground = True
+        self.forwardEnable = True
+        self.backwardEnable = True
         self.logStyle = "logging"
 
         pass
@@ -93,15 +96,35 @@ class Tab(QtWidgets.QWidget):
         rv = '<font color="'+color+'">' + text + '</font>'
         return rv
 
-    def search(self, text, backward = None):
-        print(text)
-        flags = QTextDocument.FindFlags()
-        if backward:
-            flags = flags | QTextDocument.FindBackward
+    def goTopAndSearch(self, text):
+        self.qtbView.moveCursor(QTextCursor.Start, QTextCursor.MoveAnchor)
+        self.search(text)
+
+    def search(self, text, backward=False):
+        logging.info(f"Hledaný text : {text}")
+        pos = self.qtbView.textCursor().position()
+        logging.info(f"od pozice : {pos}")
         self.searchedText = text
-        logging.debug(f"měním :{self.searchedText}")
-        rv = self.qtbView.find(text, flags)
-        self.colorChange.emit(rv)
+        if text:
+            flags = QTextDocument.FindFlags()
+            if backward:
+                flags = flags | QTextDocument.FindBackward
+            rv = self.qtbView.find(text, flags)
+            if rv:
+                self.forwardEnable = True
+                self.backwardEnable = True
+            else:
+                if pos:
+                    if backward:
+                        self.backwardEnable = False
+                    else:
+                        self.forwardEnable = False
+                else:
+                    self.backwardEnable = False
+                    self.forwardEnable = False
+            self.colorChange.emit(rv)
+        else:
+            self.colorChange.emit(True)
         pass
 
 

@@ -9,7 +9,6 @@ from PySide2.QtCore import QFile, QDir, QFileSystemWatcher, QFileInfo,\
     QCoreApplication, Qt, QPoint,\
     qDebug
 
-
 from PySide2.QtWidgets import QApplication, QMainWindow,\
     QWidget, QTabWidget, QLabel, QMessageBox, QLineEdit, QPushButton, QFileDialog,\
     QAction, QToolBar, QMenu, QStatusBar,\
@@ -42,9 +41,10 @@ class LogReader(QMainWindow):
 
         self.maxRecentFiles = 10
         self.recentFiles = self.settings.readList("Recent", "file")
-        self.recentFiles = list(set(self.recentFiles))
+        # logging.debug(f"recent : {pprint.pformat(self.recentFiles)}")
+        self.recentFiles = list(dict.fromkeys(self.recentFiles))
+        # logging.debug(f"recent : {pprint.pformat(self.recentFiles)}")
 
-        logging.debug(f"recent : {self.recentFiles}")
 
         self.defineActions()
         self.addToolBar(Qt.TopToolBarArea, self.toolbar())
@@ -70,13 +70,19 @@ class LogReader(QMainWindow):
     def myLayout(self):
         self.qleSearchedText = QLineEdit()
         self.qleSearchedText.textChanged.connect(self.searchedTextchanged)
+        self.qleSearchedText.setAutoFillBackground(True)
+        self.qleSearchedTextOrigBg = self.qleSearchedText.palette().color(self.qleSearchedText.backgroundRole())
+        self.qleSearchedTextBellBg = "#ffc5d0"
+
         self.qpbForward = QPushButton()
-        self.qpbForward.setIcon(utils.getIcon("arrow-up"))
+        self.qpbForward.setIcon(utils.getIcon("arrow-down"))
         self.qpbForward.setMaximumWidth(20)
+        self.qpbForward.clicked.connect(self.searchForward)
 
         self.qpbBackward = QPushButton()
-        self.qpbBackward.setIcon(utils.getIcon("arrow-down"))
+        self.qpbBackward.setIcon(utils.getIcon("arrow-up"))
         self.qpbBackward.setMaximumWidth(20)
+        self.qpbBackward.clicked.connect(self.searchBackward)
 
         self.qpbHide = QPushButton()
         self.qpbHide.setIcon(utils.getIcon("dialog-close"))
@@ -260,11 +266,26 @@ class LogReader(QMainWindow):
         pass
 
     def searchedTextchanged(self):
+        self.qTabW.widget(self.currActiveTab).goTopAndSearch(self.qleSearchedText.text())
+        pass
+
+    def searchForward(self):
         self.qTabW.widget(self.currActiveTab).search(self.qleSearchedText.text())
         pass
 
+    def searchBackward(self):
+        logging.debug("back")
+        self.qTabW.widget(self.currActiveTab).search(self.qleSearchedText.text(), True)
+        pass
+
     def qle_changeColor(self, color):
+        widget = self.qTabW.widget(self.currActiveTab)
+        self.qpbBackward.setEnabled(widget.backwardEnable)
+        self.qpbForward.setEnabled(widget.forwardEnable)
         logging.debug(color)
+        logging.debug(f"{self.qleSearchedText}")
+        col = self.qleSearchedTextOrigBg if color else self.qleSearchedTextBellBg
+        utils.setItemColor(item=self.qleSearchedText, bg=col)
 
 
     def handleMessage(self, message):
@@ -288,12 +309,12 @@ class LogReader(QMainWindow):
         pass
 
     def qtabW_currentChanged(self, index):
-        logging.debug(f"Tab změněn: {index}")
+        # logging.debug(f"Tab změněn: {index}")
         self.currActiveTab = index
         if index >= 0:
             tabWg = self.qTabW.widget(index)
             self.qfSearch.setVisible(tabWg.searchStatus)
-            logging.debug(f"Hledaný text : {tabWg.searchedText}")
+            # logging.debug(f"Hledaný text : {tabWg.searchedText}")
             self.qleSearchedText.setText(tabWg.searchedText)
         else:
             self.actSearch.setVisible(False)
@@ -326,7 +347,7 @@ class LogReader(QMainWindow):
         pass
 
     def fileWasChanged(self, path):
-        print(path)
+        logging.info(path)
         index = self.isOpened(path)
         logging.debug(f" index = {index}")
         if index is False:

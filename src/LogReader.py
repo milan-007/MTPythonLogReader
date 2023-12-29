@@ -344,6 +344,7 @@ class LogReader(QMainWindow):
             self.qfSearch.setVisible(tabWg.searchStatus)
             # logging.debug(f"Hledaný text : {tabWg.searchedText}")
             self.qleSearchedText.setText(tabWg.searchedText)
+            self.qpbCaseSen.setChecked(tabWg.caseSensitive)
         else:
             self.actSearch.setVisible(False)
             self.qfSearch.setVisible(False)
@@ -386,7 +387,9 @@ class LogReader(QMainWindow):
         pass
 
     def qpbCaseSen_Toggled(self, status):
-        logging.debug("Trigerred")
+        # logging.debug(f"Toggled. Status: {status}")
+        self.qTabW.widget(self.currActiveTab).caseSensitive = status
+        self.searchedTextchanged()
         pass
 
     def aboutQt(self):

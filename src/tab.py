@@ -105,10 +105,13 @@ class Tab(QtWidgets.QWidget):
         pos = self.qtbView.textCursor().position()
         logging.info(f"od pozice : {pos}")
         self.searchedText = text
+
         if text:
             flags = QTextDocument.FindFlags()
             if backward:
                 flags = flags | QTextDocument.FindBackward
+            if self.caseSensitive:
+                flags = flags | QTextDocument.FindCaseSensitively
             rv = self.qtbView.find(text, flags)
             if rv:
                 self.forwardEnable = True

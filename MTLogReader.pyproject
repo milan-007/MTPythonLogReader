@@ -1,3 +1,13 @@
 {
-    "files": ["src/settings.py","src/tab.py","launcher.py","src/LogReader.py","info.py","src/warning.py","src/utils.py","test/subttitlereader.log","test/VideoSubtitle reader.log"]
+    "files": [
+        "src/settings.py",
+        "src/tab.py",
+        "launcher.py",
+        "src/LogReader.py",
+        "info.py",
+        "src/warning.py",
+        "src/utils.py",
+        "test/subttitlereader.log",
+        "test/VideoSubtitle reader.log"
+    ]
 }

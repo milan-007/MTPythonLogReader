@@ -9,3 +9,5 @@ web = "sup.cz"
 version = "0.2.1"
 appPath=""
 startTime=""
+
+QRCImagePath = ""

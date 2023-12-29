@@ -78,25 +78,35 @@ class LogReader(QMainWindow):
 
         self.qpbForward = QPushButton()
         self.qpbForward.setIcon(utils.getIcon("arrow-down"))
+        self.qpbForward.setToolTip(self.tr("Search forward"))
         self.qpbForward.setMaximumWidth(20)
         self.qpbForward.clicked.connect(self.searchForward)
 
+
         self.qpbBackward = QPushButton()
         self.qpbBackward.setIcon(utils.getIcon("arrow-up"))
+        self.qpbBackward.setToolTip(self.tr("Search backward"))
         self.qpbBackward.setMaximumWidth(20)
         self.qpbBackward.clicked.connect(self.searchBackward)
+
+        self.qpbCaseSen = QPushButton()
+        self.qpbCaseSen.setIcon(utils.getIcon("preferences-desktop-font"))
+        self.qpbCaseSen.setMaximumWidth(20)
+        self.qpbCaseSen.setCheckable(True)
+        self.qpbCaseSen.setToolTip(self.tr("Case sensitive"))
+        self.qpbCaseSen.toggled.connect(self.qpbCaseSen_Toggled)
 
         self.qpbHide = QPushButton()
         self.qpbHide.setIcon(utils.getIcon("dialog-close"))
         self.qpbHide.setMaximumWidth(20)
-
 
         framegrid = QGridLayout()
         i = 0
         framegrid.addWidget(self.qleSearchedText, i, 0, 1, 3)
         framegrid.addWidget(self.qpbForward, i, 4)
         framegrid.addWidget(self.qpbBackward, i, 5)
-        framegrid.addWidget(self.qpbHide, i, 6)
+        framegrid.addWidget(self.qpbCaseSen, i, 6)
+        framegrid.addWidget(self.qpbHide, i, 8)
 
         self.qfSearch = QFrame()
         self.qfSearch.setVisible(False)
@@ -373,6 +383,10 @@ class LogReader(QMainWindow):
             return
         else:
             self.qTabW.widget(index).addText()
+        pass
+
+    def qpbCaseSen_Toggled(self, status):
+        logging.debug("Trigerred")
         pass
 
     def aboutQt(self):

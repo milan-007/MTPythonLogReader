@@ -6,6 +6,6 @@
 applicationName = "MultiTab LogReader"
 organisationName = "SUPSoft"
 web = "sup.cz"
-version = "0.2.0"
+version = "0.2.1"
 appPath=""
 startTime=""

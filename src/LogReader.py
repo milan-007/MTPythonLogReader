@@ -386,6 +386,7 @@ class LogReader(QMainWindow):
         self.tr("""This application intended to read log files
 mainly created by Python logging module
 Author:{0}
+
 Contributor(s) : {2}
 
 Version : {1}""").format(f.organisationName, f.version, contibutors))

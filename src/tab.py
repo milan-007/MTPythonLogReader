@@ -119,6 +119,8 @@ class Tab(QtWidgets.QWidget):
                         self.backwardEnable = False
                     else:
                         self.forwardEnable = False
+                    self.colorChange.emit(True)
+                    return
                 else:
                     self.backwardEnable = False
                     self.forwardEnable = False

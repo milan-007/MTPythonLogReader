@@ -34,6 +34,8 @@ class LogReader(QMainWindow):
         if savedGeometry:
             self.restoreGeometry(savedGeometry)
 
+        self.setWindowIcon(utils.getIcon('utilities-log-viewer'))
+
         self.setupUI()
         self.fwatcher = QFileSystemWatcher()
         self.fwatcher.fileChanged.connect(self.fileWasChanged)
@@ -159,6 +161,19 @@ class LogReader(QMainWindow):
             self.tr("Close current document")
         )
         self.actCloseDocument.setShortcut("Ctrl+W")
+
+        self.ActAboutQt = self.createAction(
+            "qtlogo", self.aboutQt,
+            self.tr("About Qt"),
+            self.tr("Shows some infos about Qt")
+        )
+
+        self.ActAboutApp = self.createAction(
+        "utilities-log-viewer", self.aboutApp,
+        self.tr("About Reader"),
+        self.tr("Shows some infos about application")
+    )
+
         pass
 
     def createAction(self, icon, do, text: str = "", tooltip: str = ""):
@@ -210,6 +225,9 @@ class LogReader(QMainWindow):
         editMenu = mainMenu.addMenu(self.tr("&Edit"))
         editMenu.addAction(self.actSearch)
 
+        helpMenu = mainMenu.addMenu(self.tr('&Help'))
+        helpMenu.addAction(self.ActAboutQt)
+        helpMenu.addAction(self.ActAboutApp)
         pass
 
     def exitApp(self):
@@ -356,6 +374,22 @@ class LogReader(QMainWindow):
         else:
             self.qTabW.widget(index).addText()
         pass
+
+    def aboutQt(self):
+        QMessageBox.aboutQt(self)
+
+    def aboutApp(self):
+        appname = f.applicationName
+        contibutors =""" Hōōin Kyōma at abclinuxu.cz """
+        QMessageBox.about(self,
+        self.tr(f"About {appname}"),
+        self.tr("""This application intended to read log files
+mainly created by Python logging module
+Author:{0}
+Contributor(s) : {2}
+
+Version : {1}""").format(f.organisationName, f.version, contibutors))
+
 
     def closeEvent(self, event):
         self.settings.setValueByAbbreviature("mwg", self.saveGeometry())

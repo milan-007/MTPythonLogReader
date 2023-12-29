@@ -1,0 +1,3 @@
+{
+    "files": ["src/warning.py","src/settings.py","info.py","src/tab.py","launcher.py","src/utils.py","src/LogReader.py"]
+}

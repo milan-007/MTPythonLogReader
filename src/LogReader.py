@@ -397,7 +397,7 @@ class LogReader(QMainWindow):
 
     def aboutApp(self):
         appname = f.applicationName
-        contibutors =""" Hōōin Kyōma at abclinuxu.cz """
+        contibutors = """ Hōōin Kyōma at abclinuxu.cz """
         QMessageBox.about(self,
         self.tr(f"About {appname}"),
         self.tr("""This application intended to read log files

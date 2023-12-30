@@ -422,7 +422,9 @@ Version : {1}""").format(f.organisationName, f.version, contibutors))
             text)
 
     def tr(self, text):
-        trs = QApplication.translate("MainWindow", text)
+        #logging.debug(f"Original text {text}")
+        trs = QApplication.translate("LogReader", text)
+        #logging.debug(f"Translated text {trs}")
         if trs is None:
             trs = text
         return trs
